@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Exercise 5</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="/css/exercise5.css" type="text/css" charset="utf-8">
+  </head>
+  <body>
+    <div id="schedulingFormDiv">
+      <h1 id="schedule">Schedules</h1>
+      <form action="/api/bookings" method="POST" accept-charset="utf-8">
+
+         <label for="id">Please select one schedule :</label>
+         <select name="id" id="id">
+         </select>
+         
+         <label for="student_email">Email</label>
+          <input type="text" name="student_email" value="" id="student_email">
+
+         <input type="submit" name="submit" value="submit">
+      </form>
+    </div>
+    <div id="studentAddFormDiv" class="hidden">
+      <h2 id="newStudent">Please Provide New Student Details:</h2>
+      <form action="/api/students" method="POST" accept-charset="utf-8">
+
+       <label for="email">Email :</label>
+         <input type=text" name="email" value="">
+
+       <label for="name">Name :</label>
+         <input type="text" name="name" value="" id="name">
+
+       <label for="booking_sequence">Booking Sequence :</label>
+         <input type="text" name="booking_sequence" value="" id="booking_sequence">
+
+         <input type="submit" name="submit" value="submit">
+      </form>
+    </div>
+    <script type="text/javascript" charset="utf-8">
+      let staffList;
+      (() => {
+        let staffListRequest = new XMLHttpRequest();
+        staffListRequest.open('GET', '/api/staff_members');
+        staffListRequest.ResponseType = 'json';
+
+        staffListRequest.send();
+
+        staffListRequest.addEventListener('load', event => {
+           staffList = JSON.parse(staffListRequest.response);
+        });
+
+        staffListRequest.addEventListener('error', event => 'Error retrieving staff list.');
+      })();
+
+      function findStaffName(id, list) {
+        let staff = Object.values(list)
+
+        for (let ind = 0; ind < list.length; ind += 1) {
+          let staffObj = list[ind];
+          if (staffObj.id === id) {
+            return staffObj.name;
+          }
+        }
+
+        throw 'No matching staff found';
+      }
+
+      function convertFormDataToJSON(formToConvert) {
+          let json = {};
+          for (const pair of formToConvert.entries()) {
+            json[pair[0]] = pair[1];
+          };
+          return json;
+      };
+
+      // create schedules obj to populate options
+      let schedules;
+      // set select element to target addition of options
+      const staffSchedulesSelect = document.querySelector('select'); 
+
+      // get schedules and append options to scheduling select
+      (() => {
+        let scheduleRequest = new XMLHttpRequest();
+        scheduleRequest.open('GET', '/api/schedules');
+        scheduleRequest.responseType = 'json';
+
+        scheduleRequest.addEventListener('load', event => {
+          schedules = scheduleRequest.response;
+          schedules.forEach(schedule => {
+            if (schedule.student_email === null) {
+              let newOption = document.createElement('option');
+              let staffName = findStaffName(schedule.staff_id, staffList)
+              newOption.setAttribute('value', schedule.id);
+              newOption.textContent = `${staffName} | ${schedule.date} | ${schedule.time}`;
+              staffSchedulesSelect.appendChild(newOption);
+            }
+          });
+        });
+
+        scheduleRequest.addEventListener('error', event => {
+          throw 'Error retrieving schedules';
+        });
+
+        scheduleRequest.send();
+      })();
+       
+
+      const schedulingForm = document.body.querySelector('form');
+
+      schedulingForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        let schedulingRequest = new XMLHttpRequest();
+        schedulingRequest.open('POST', '/api/bookings');
+        schedulingRequest.setRequestHeader('Content-Type', 'application/json');
+
+        let formData = new FormData(schedulingForm);
+        formData = convertFormDataToJSON(formData);
+        formData.id = Number(formData.id);
+        let studentEmail = formData.student_email;
+        formData = JSON.stringify(formData);
+
+        schedulingRequest.addEventListener('load', event => {
+          if (schedulingRequest.status === 204) {
+            alert('Booked');
+          } else if (schedulingRequest.status === 404) {
+            let bookingSequence = schedulingRequest.response.split(':')[1].trim();;
+            let addStudentDiv = document.querySelector('.hidden');
+            let addStudentForm = document.querySelectorAll('form')[1];
+
+            addStudentDiv.classList.toggle('hidden');
+            addStudentForm.querySelector('#booking_sequence').value = bookingSequence;
+            addStudentForm.querySelector("input[name='email']").value = studentEmail;
+
+            // event listener for adding new student
+            addStudentForm.addEventListener('submit', event => {
+              event.preventDefault();
+
+              let xhr = new XMLHttpRequest();
+              xhr.open('POST', addStudentForm.action);
+              xhr.setRequestHeader('Content-Type', 'application/json');
+
+              let newFormData = new FormData(addStudentForm);
+              newFormData = JSON.stringify(convertFormDataToJSON(newFormData));
+            // event listener for submission of new student - trigger second schedule
+              xhr.addEventListener('load', event => {
+                alert(xhr.response);
+                addStudentDiv.classList.toggle('hidden');
+
+            // create second scheduling request
+                let secondScheduleRequest = new XMLHttpRequest();
+                secondScheduleRequest.open('POST', '/api/bookings');
+                secondScheduleRequest.setRequestHeader('Content-Type', 'application/json');
+
+                secondScheduleRequest.addEventListener('load', event => {
+                  alert('Booked');
+                  schedulingForm.reset();
+                });
+
+                secondScheduleRequest.send(formData);
+              });
+              xhr.send(newFormData);
+            });
+
+            alert(schedulingRequest.response);
+          }
+        });
+
+        schedulingRequest.send(formData);
+      });
+    </script>
+  </body>
+</html>

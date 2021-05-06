@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Adding Schedules</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./css/addForm.css" type="text/css" media="screen" charset="utf-8">
+  </head>
+  <body>
+    <button type="button" class="addButton">Add Schedule</button>
+    <div id="mainForm">
+      <form action="/api/schedules" method="POST" accept-charset="utf-8" id="scheduleForm">
+        
+      
+      
+      <input type="submit" value="Submit">
+      </form>
+    </div>
+    <script type="text/javascript" charset="utf-8">
+      const staffFormCounter = (function() {
+        let totalForms = 0;
+        return {
+          addToTotal() { return totalForms += 1},
+          getTotalForms() { return totalForms },
+        };
+      })();
+
+      // create staff list from api
+      (() => {
+        let request = new XMLHttpRequest();
+        request.open('GET', 'api/staff_members');
+        request.setRequestHeader('Accept', 'json');
+
+        request.addEventListener('load', event => {
+          staff = JSON.parse(request.response);
+          // initial load of section needs to be handled here or variable will be undefined
+          addFormSection();
+        });
+
+        request.addEventListener('error', event => {
+          return "GetStaffList Error"
+        });
+
+        request.send();
+      })();
+
+      function createStaffList(section) {
+        // get counter to track ids for multiple form additions/tracking
+        let currentListNumber = staffFormCounter.getTotalForms();
+
+        // create label for list
+        const staffListLabel = document.createElement('label');
+        staffListLabel.setAttribute('for', `'staffSelect${currentListNumber}`);
+        staffListLabel.textContent = 'Staff :';
+
+        // create select node 
+        const staffList = document.createElement('select');
+        staffList.setAttribute('id', `staffSelect${currentListNumber}`);
+        staffList.setAttribute('name', `staffSelect${currentListNumber}`);
+
+        // attach nodes to section of form 
+        section.appendChild(staffListLabel);
+        section.appendChild(staffList)
+
+        // iterate through each staff, create option with id/name, append to staffList
+        Object.values(staff).forEach(staffMember => {
+          let newOption = document.createElement('option');
+          newOption.setAttribute('value', `${staffMember['id']}`);
+          newOption.textContent = `${staffMember['name']}`;
+          staffList.appendChild(newOption);
+        });
+      }
+
+      function createFormDate(section) {
+        let currentListNumber = staffFormCounter.getTotalForms();
+
+        const dateLabel = document.createElement('label');
+        dateLabel.setAttribute('for', `date${currentListNumber}`);
+        dateLabel.textContent = 'Date :';
+
+        const dateInput = document.createElement('input');
+        dateInput.setAttribute('id', `date${currentListNumber}`);
+        dateInput.setAttribute('name', `date${currentListNumber}`); 
+
+        let submitButton = section.lastElementChild;
+        section.appendChild(dateLabel);
+        section.appendChild(dateInput);
+      }
+
+      function createFormTime(section) {
+        let currentListNumber = staffFormCounter.getTotalForms();
+        
+        const timeLabel = document.createElement('label');
+        timeLabel.setAttribute('for', `time${currentListNumber}`);
+        timeLabel.textContent = 'Time :';
+
+        const timeInput = document.createElement('input');
+        timeInput.setAttribute('id', `time${currentListNumber}`);
+        timeInput.setAttribute('name', `time${currentListNumber}`); 
+
+        let submitButton = section.lastElementChild;
+        section.appendChild(timeLabel);
+        section.appendChild(timeInput);
+      }
+
+      function addFormSection() {
+        let currentListNumber = staffFormCounter.addToTotal();
+        const newSection = document.createElement('div');
+        newSection.setAttribute('id', `formSection${currentListNumber}`);
+
+        createStaffList(newSection);
+        createFormDate(newSection);
+        createFormTime(newSection);
+
+        let form = document.querySelector('form');
+        let submit = form.lastElementChild;
+        form.insertBefore(newSection, submit);
+      };
+
+      // event handler to add new section to form
+      let addButton = document.querySelector('.addButton');
+      addButton.addEventListener('click', event => {
+        addFormSection();
+      });
+
+      // function to convert formdata to json
+      function convertFormDataToJSON(formToConvert) {
+        let json = {};
+        for (const pair of formToConvert.entries()) {
+          json[pair[0]] = pair[1];
+        };
+        return json;
+      };
+
+      function parseJSONFormToScheduleJSON(data) {
+        let scheduleJSON = {"schedules": []};
+
+        let counter = 1;
+        let formValues = Object.values(data);
+
+        while (formValues.length > 0) {
+          let newObj = {"staff_id": undefined, "date": undefined, "time": undefined};
+          newObj.staff_id = formValues.shift();
+          newObj.date = formValues.shift();
+          newObj.time = formValues.shift();
+          scheduleJSON.schedules.push(newObj);
+        }
+
+        return JSON.stringify(scheduleJSON);
+      }
+      const form = document.querySelector('form');
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        let formData = new FormData(form);
+        formData = convertFormDataToJSON(formData);
+
+        let scheduleData = parseJSONFormToScheduleJSON(formData);
+
+        let addScheduleRequest = new XMLHttpRequest();
+        addScheduleRequest.open('POST', form.action);
+        addScheduleRequest.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+
+        addScheduleRequest.send(scheduleData);
+
+        addScheduleRequest.addEventListener('load', event => {
+          alert(addScheduleRequest.response);
+        });
+
+        addScheduleRequest.addEventListener('error', event => {
+          alert(addScheduleRequest.response);
+        });
+      });
+    </script>
+  </body>
+</html>
+

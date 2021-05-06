@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Exercise7</title>
+    <meta charset="utf-8" />
+
+  </head>
+  <body>
+    <h1 id="cancellations">Cancellations</h1>
+    <p>Implement two functions: one for cancelling schedules and the other for cancelling of bookings. The functions take a scheduleId and a bookingId as arguments respectively.</p>
+    <script type="text/javascript" charset="utf-8">
+      function cancelSchedule(scheduleID) {
+        let xhr = new XMLHttpRequest();
+        xhr.open('DELETE', `/api/schedules/${String(scheduleID)}`);
+
+
+        xhr.addEventListener('load', function(event) {
+          switch (xhr.status) {
+            case 204: 
+              alert('Schedule removed successfully!');
+              break;
+            case 403:
+            case 404:
+              alert(xhr.response);
+              break;
+          }
+        });
+
+        xhr.send();
+      };
+
+      function cancelBooking(bookingID) {
+        let xhr = new XMLHttpRequest();
+        xhr.open('PUT', `/api/bookings/${String(bookingID)}`);
+        
+
+        xhr.addEventListener('load', function(event) {
+          switch (xhr.status) {
+            case 204: 
+              alert('Booking removed successfully!');
+              break;
+            case 404:
+              alert(xhr.response);
+              break;
+          }
+        });
+
+        xhr.send();
+      };
+    </script>
+  </body>
+</html>
+

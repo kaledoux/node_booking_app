@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Exercise 6</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <h1 id="booking_heading">Bookings</h1>
+    <ul id="bookings"></ul>
+    <script type="text/javascript" charset="utf-8">
+      function convertStringArrayDates(stringArray) {
+        return stringArray.split(',').map(date => date.replace(/[^0-9-]/g, ''))
+      } 
+
+      function convertStringArraySchedule(stringArray) {
+        return stringArray.split(',').map(info => info.replace(/[\]\["]/g, ''));
+      }
+
+      function formatScheduleData(scheduleArray) {
+        return `${scheduleArray[0]} || ${scheduleArray[1]} || ${scheduleArray[2]}`
+      };
+       
+      function buildList() {
+        let bookingRequest = new XMLHttpRequest();
+        bookingRequest.open('GET', '/api/bookings');
+
+        bookingRequest.addEventListener('load', function(event) {
+          let dates = convertStringArrayDates(bookingRequest.response);
+          dates.forEach(date => {
+            let newListItem = document.createElement('li');
+            newListItem.innerText = date;
+            document.querySelector('#bookings').appendChild(newListItem);
+          });
+        });
+
+        bookingRequest.send();
+      };
+
+      function addListenersToList() {
+        let bookingList = document.querySelector('ul');
+
+        bookingList.addEventListener('click', function(event) {
+          if (event.target.nodeName === 'LI') {
+            let clickedDate = event.target;
+
+            let scheduleRequest = new XMLHttpRequest();
+            scheduleRequest.open('GET', `/api/bookings/${clickedDate.innerText}`);
+
+            scheduleRequest.addEventListener('load', function(event) {
+              let newList = document.createElement('ul');
+              schedulesOnDate = scheduleRequest.response
+                                               .split('],[')
+                                               .map(sched => convertStringArraySchedule(sched));
+
+              schedulesOnDate.forEach(schedule => {
+                let newListItem = document.createElement('li');
+                newListItem.innerText = formatScheduleData(schedule);
+                newList.appendChild(newListItem);
+              })
+              clickedDate.appendChild(newList);
+            });      
+
+            scheduleRequest.send();
+          } else {
+            return;
+          }
+        });
+      };
+    document.addEventListener('DOMContentLoaded', event => {
+      buildList();
+      addListenersToList();
+    });
+    </script>
+  </body>
+</html>
+

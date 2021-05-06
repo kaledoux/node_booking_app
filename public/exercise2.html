@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <meta content="text/html; charset=utf-8">
+    <title>Getting Schedules</title>
+  </head>
+  <body>
+    <h1 id="heading">Getting Schedules</h1>
+    <p>Implement a function that retrieves all the schedules that are available. If one or more schedules are available, tally the count of schedules for each staff and alert the user of result as "key: value" pairs with the staff id as key (in the format of 'staff {id}'; e.g, 'staff 1') and the count of schedules as the value. If there are no schedules, alert the user that there are currently no schedules available for booking.</p>
+
+    <p>When implementing the function, keep in mind that server has been known to slow down when there are more than 7 schedules to retrieve. It doesn't always happen, but be sure to handle it accordingly. Once 5 seconds have passed, cancel the retrieval and inform the user to try again.</p>
+
+  <p>Finally, inform the user about the completion of the request regardless of the success or failure (timeout) of the request.</p> 
+  <script>
+    function getSchedules() {
+        // parse method to handle return json data from api
+        function parseSchedule(jsonSched) {
+          let staffSchedules = {};
+          jsonSched.forEach(schedule => {
+              if (staffSchedules[schedule.staff_id] === undefined) {
+                  staffSchedules[schedule.staff_id] = 1;
+              } else {
+                  staffSchedules[schedule.staff_id] += 1;
+              }
+          })
+          return staffSchedules;
+        };
+
+        // take data from parsed schedule and build relevant alert message
+        function buildScheduleReadout(obj) {
+            let message = "";
+            if (Object.keys(obj).length === 0) return "The are no available schedules!";
+            
+            Object.keys(obj).forEach(staff => {
+                message += `staff ${staff} : ${obj[staff]}\n`
+            })
+            return message;
+        };
+
+
+        // create request for scheduling info
+        let request = new XMLHttpRequest();
+        // open request to api endpoint
+        request.open('GET', 'api/schedules');
+        request.setRequestHeader('Accept', 'json');
+        
+        // set timeout property for request
+        request.timeout = 5000;
+
+        // set event listeners to catch success - fail
+        request.addEventListener('load', function(event) {
+            let content = parseSchedule(JSON.parse(request.response));
+            let message = buildScheduleReadout(content);
+            alert(message);
+        });
+        
+        request.addEventListener('timeout', function(event) {
+            alert('Request Timed Out. Please try again later!');
+        });
+
+        // send request
+        request.send();
+    };
+  </script>
+  </body>
+</html>

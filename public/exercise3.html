@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Adding Staff</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <h1 id="prompt">Instructions</h1>
+    <p>Implement a form for adding new staff, and then use the booking app API to add the staff to the database. Your implementation should handle the different possible responses of the server and inform the user of the outcome.</p>
+
+    <form action="/api/staff_members" method="post" accept-charset="utf-8">
+      <dl>
+        <dt><label for="email">Email:</label></dt>
+        <dd><input name="email" id="email"></dd>
+
+        <dt><label for="name">Name:</label></dt>
+        <dd><input name="name" id="name"></dd>
+      </dl>
+      <input type="submit">
+    </form> 
+    <script type="text/javascript" charset="utf-8">
+      //function to return stringified json from FormData object
+      function convertFormDataToJSON(formToConvert) {
+        let json = {};
+        for (const pair of formToConvert.entries()) {
+          json[pair[0]] = pair[1];
+        };
+        return JSON.stringify(json);
+      };
+
+      // find from data
+      let form = document.querySelector('form');
+
+      // event listent on submission, prevent default and send request
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        // create FormData object from form
+        let formData = new FormData(form);
+        formData = convertFormDataToJSON(formData);
+
+        let request = new XMLHttpRequest();
+        request.open('POST', '/api/staff_members');    
+        request.setRequestHeader('Content-Type', 'application/json');
+        
+        request.addEventListener('load', function(e) {
+          if (request.status === 201) {
+            let newStaff = JSON.parse(request.response);
+            alert(`Successfully create staff with id: ${newStaff["id"]}`);
+            form.reset();
+          } else {
+            alert(request.response);
+          }
+        });
+
+        request.send(formData);
+      });
+    </script>
+  </body>
+</html>
